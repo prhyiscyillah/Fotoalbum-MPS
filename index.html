@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acesse sua galeria</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="access-screen">
+  <div class="access-card">
+    <div class="studio-mark" id="studioMark">MPS Photography</div>
+    <h1>Acesse sua galeria</h1>
+
+    <div class="access-meta" id="galleryMeta" style="display:none;">
+      <div class="row"><span>Cliente</span><strong id="metaCliente">—</strong></div>
+      <div class="row"><span>Ensaio</span><strong id="metaEnsaio">—</strong></div>
+      <div class="row"><span>Data</span><strong id="metaData">—</strong></div>
+    </div>
+
+    <form id="accessForm">
+      <div class="field" id="galleryPickerField">
+        <label for="gallerySelect">Sua galeria</label>
+        <select id="gallerySelect" style="width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:8px;font-size:1rem;background:var(--paper);"></select>
+      </div>
+
+      <div class="field">
+        <label for="senha">Senha da galeria</label>
+        <input type="password" id="senha" placeholder="Digite a senha que você recebeu" required>
+      </div>
+
+      <button type="submit" class="btn">Acessar minha galeria</button>
+      <p class="error-msg" id="errorMsg">Senha incorreta. Verifique e tente novamente.</p>
+    </form>
+
+    <p class="access-foot">Precisa de ajuda? Fale com a fotógrafa pelo WhatsApp.</p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/data.js"></script>
+<script>
+  document.getElementById('studioMark').textContent = STUDIO_CONFIG.studioName;
+
+  const select = document.getElementById('gallerySelect');
+  const submitBtn = document.querySelector('#accessForm button[type="submit"]');
+  let galleries = [];
+
+  (async () => {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Carregando galerias...';
+    try {
+      galleries = (await Store.getAll()).filter(g => g.status === 'ativa');
+    } catch (err) {
+      document.getElementById('errorMsg').textContent =
+        'Não foi possível carregar as galerias agora. Verifique sua internet e recarregue a página.';
+      document.getElementById('errorMsg').classList.add('show');
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Acessar minha galeria';
+
+    galleries.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = `${g.clienteNome} — ${g.ensaioNome}`;
+      select.appendChild(opt);
+    });
+
+    if (galleries.length) updateMeta();
+
+    // Permite pré-selecionar a galeria via link: index.html?g=gal-maria-gestante
+    const params = new URLSearchParams(location.search);
+    const preset = params.get('g');
+    if (preset && galleries.some(g => g.id === preset)) {
+      select.value = preset;
+      updateMeta();
+      document.getElementById('galleryPickerField').style.display = 'none';
+    }
+  })();
+
+  function updateMeta() {
+    const g = galleries.find(x => x.id === select.value);
+    if (!g) return;
+    document.getElementById('galleryMeta').style.display = 'grid';
+    document.getElementById('metaCliente').textContent = g.clienteNome;
+    document.getElementById('metaEnsaio').textContent = g.ensaioNome;
+    document.getElementById('metaData').textContent = new Date(g.data + 'T00:00:00')
+      .toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  select.addEventListener('change', updateMeta);
+
+  document.getElementById('accessForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verificando...';
+
+    const g = await Store.getById(select.value);
+    const senha = document.getElementById('senha').value.trim();
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Acessar minha galeria';
+
+    if (!g || g.status !== 'ativa') {
+      errorMsg.textContent = 'Esta galeria não está disponível no momento.';
+      errorMsg.classList.add('show');
+      return;
+    }
+    if (g.expiraEm && new Date(g.expiraEm) < new Date()) {
+      errorMsg.textContent = 'O prazo para seleção desta galeria já encerrou.';
+      errorMsg.classList.add('show');
+      return;
+    }
+    if (senha !== g.senha) {
+      errorMsg.textContent = 'Senha incorreta. Verifique e tente novamente.';
+      errorMsg.classList.add('show');
+      return;
+    }
+    sessionStorage.setItem('fotoalbum_sessao', g.id);
+    window.location.href = 'galeria.html';
+  });
+</script>
+</body>
+</html>

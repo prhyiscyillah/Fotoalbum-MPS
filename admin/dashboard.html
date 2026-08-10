@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Visão geral</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="admin-shell">
+
+<header class="admin-topbar">
+  <div class="studio-mark display" id="studioMarkAdmin">MPS Photography</div>
+  <nav class="admin-nav">
+    <a href="dashboard.html" data-page="dashboard">Visão geral</a>
+    <a href="galerias.html" data-page="galerias">Galerias</a>
+    <a href="selecoes.html" data-page="selecoes">Seleções recebidas</a>
+    <a href="#" onclick="logoutAdmin()">Sair</a>
+  </nav>
+</header>
+
+<main class="admin-main">
+  <div class="container">
+    <div class="admin-head">
+      <div>
+        <h1>Visão geral</h1>
+        <p>Resumo das suas galerias e seleções.</p>
+      </div>
+      <a href="galerias.html" class="btn small">+ Nova galeria</a>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="section-label" style="margin-top:8px;">
+      <span class="eyebrow">GALERIAS RECENTES</span>
+    </div>
+    <div class="table-card">
+      <table id="recentTable">
+        <thead>
+          <tr><th>Cliente</th><th>Ensaio</th><th>Status</th><th>Seleção</th><th></th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/admin.js"></script>
+<script>
+  adminGuard();
+  renderAdminTopbar('dashboard');
+
+  (async () => {
+    const galleries = await Store.getAll();
+    const totalClientes = new Set(galleries.map(g => g.clienteNome)).size;
+    const totalGalerias = galleries.length;
+    const totalAtivas = galleries.filter(g => g.status === 'ativa').length;
+    const totalEnviadas = galleries.filter(g => g.selecaoEnviada).length;
+
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat-card"><div class="num display">${totalClientes}</div><div class="lbl">Clientes</div></div>
+      <div class="stat-card"><div class="num display">${totalGalerias}</div><div class="lbl">Galerias</div></div>
+      <div class="stat-card"><div class="num display">${totalAtivas}</div><div class="lbl">Galerias ativas</div></div>
+      <div class="stat-card"><div class="num display">${totalEnviadas}</div><div class="lbl">Seleções recebidas</div></div>
+    `;
+
+    const tbody = document.querySelector('#recentTable tbody');
+    if (!galleries.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Nenhuma galeria cadastrada ainda.</td></tr>`;
+    } else {
+      galleries.slice().reverse().forEach(g => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${g.clienteNome}</td>
+          <td>${g.ensaioNome}</td>
+          <td><span class="badge ${g.status === 'ativa' ? '' : 'inactive'}">${g.status === 'ativa' ? 'Ativa' : 'Inativa'}</span></td>
+          <td>${g.selecaoEnviada ? `<span class="badge">Enviada</span>` : `<span class="badge pending">${g.selecao.length}/${g.limiteFotos} em andamento</span>`}</td>
+          <td class="row-actions"><a href="galerias.html?id=${g.id}">Ver</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  })();
+</script>
+</body>
+</html>

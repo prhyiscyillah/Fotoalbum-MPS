@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Seleções recebidas</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="admin-shell">
+
+<header class="admin-topbar">
+  <div class="studio-mark display" id="studioMarkAdmin">MPS Photography</div>
+  <nav class="admin-nav">
+    <a href="dashboard.html" data-page="dashboard">Visão geral</a>
+    <a href="galerias.html" data-page="galerias">Galerias</a>
+    <a href="selecoes.html" data-page="selecoes">Seleções recebidas</a>
+    <a href="#" onclick="logoutAdmin()">Sair</a>
+  </nav>
+</header>
+
+<main class="admin-main">
+  <div class="container">
+    <div class="admin-head">
+      <div>
+        <h1>Seleções recebidas</h1>
+        <p>Fotos escolhidas por cada cliente, prontas para edição e entrega.</p>
+      </div>
+    </div>
+
+    <div id="selectionsList"></div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/admin.js"></script>
+<script>
+  adminGuard();
+  renderAdminTopbar('selecoes');
+
+  const container = document.getElementById('selectionsList');
+
+  (async () => {
+    const galleries = (await Store.getAll()).filter(g => g.selecao && g.selecao.length > 0);
+
+    if (!galleries.length) {
+      container.innerHTML = `<div class="panel empty-state">
+        <div class="display">Nenhuma seleção recebida ainda</div>
+        <p>Assim que uma cliente enviar a seleção da galeria dela, ela aparecerá aqui.</p>
+      </div>`;
+      return;
+    }
+
+    for (const g of galleries.slice().reverse()) {
+      const photos = await PhotoProvider.getPhotos(g.selecao);
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+      const extraCount = Math.max(0, g.selecao.length - g.limiteFotos);
+      const extraIds = new Set(g.selecao.slice(g.limiteFotos));
+      panel.innerHTML = `
+        <div class="admin-head" style="margin-bottom:14px;">
+          <div>
+            <h3 class="display" style="font-size:1.2rem;">${g.clienteNome} — ${g.ensaioNome}</h3>
+            <p style="color:var(--ink-soft); font-size:.85rem; margin:4px 0 0;">
+              Limite: ${g.limiteFotos} fotos · Selecionadas: ${g.selecao.length}
+              ${extraCount > 0 ? ` · <span class="badge pending">${extraCount} extra${extraCount > 1 ? 's' : ''}${g.valorFotoExtra ? ' · R$ ' + g.valorFotoExtra + '/un' : ''}</span>` : ''}
+              ${g.selecaoEnviada ? ' · <span class="badge">Enviada</span>' : ' · <span class="badge pending">Em andamento</span>'}
+            </p>
+          </div>
+          <div class="row-actions">
+            <button class="btn small secondary" data-copy="${g.selecao.join(',')}">Copiar seleção</button>
+            <a class="btn small secondary" href="${whatsappLink(g)}" target="_blank" rel="noopener">Compartilhar no WhatsApp</a>
+          </div>
+        </div>
+        <div class="selection-frames">
+          ${photos.map(p => `<div class="mini"><img src="${p.url}" alt="Foto ${p.numero}">${extraIds.has(p.id) ? '<span style="background:var(--brass);">EXTRA</span>' : `<span>#${p.numero}</span>`}</div>`).join('')}
+        </div>
+      `;
+      panel.querySelector('[data-copy]').addEventListener('click', (e) => {
+        const nums = e.target.dataset.copy.split(',').map(n => `#${n}`).join(', ');
+        copyToClipboard(nums);
+      });
+      container.appendChild(panel);
+    }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel administrativo — acesso</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="access-screen">
+  <div class="access-card">
+    <div class="studio-mark" id="studioMark">MPS Photography</div>
+    <h1>Painel administrativo</h1>
+    <form id="loginForm">
+      <div class="field">
+        <label for="user">Usuário</label>
+        <input type="text" id="user" placeholder="admin" required>
+      </div>
+      <div class="field">
+        <label for="pass">Senha</label>
+        <input type="password" id="pass" placeholder="Sua senha" required>
+      </div>
+      <button type="submit" class="btn">Entrar no painel</button>
+      <p class="error-msg" id="errorMsg">Usuário ou senha incorretos.</p>
+    </form>
+    <p class="access-foot">Acesso restrito à fotógrafa. Demo: usuário <strong>admin</strong> / senha <strong>admin123</strong>.</p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="../js/data.js"></script>
+<script>
+  document.getElementById('studioMark').textContent = STUDIO_CONFIG.studioName;
+
+  document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const user = document.getElementById('user').value.trim();
+    const pass = document.getElementById('pass').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+
+    // Nota de segurança: esta checagem simples serve apenas para a demo
+    // com dados mockados. Numa versão real, a autenticação deve ocorrer
+    // num backend, nunca comparando senha em texto puro no frontend.
+    if (user === 'admin' && pass === 'admin123') {
+      sessionStorage.setItem('fotoalbum_admin', '1');
+      window.location.href = 'dashboard.html';
+    } else {
+      errorMsg.classList.add('show');
+    }
+  });
+</script>
+</body>
+</html>
