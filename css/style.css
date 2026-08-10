@@ -244,9 +244,9 @@ a:focus-visible, button:focus-visible, input:focus-visible{
   display:flex; align-items:center; justify-content:center;
   font-family:'JetBrains Mono',monospace;
   font-size:1.1rem;
-  font-weight:500;
-  letter-spacing:.3em;
-  color:rgba(255,255,255,.35);
+  font-weight:700;
+  letter-spacing:.18em;
+  color:rgba(255,255,255,.5);
   transform:rotate(-28deg);
   pointer-events:none;
   mix-blend-mode:overlay;
@@ -337,8 +337,8 @@ a:focus-visible, button:focus-visible, input:focus-visible{
 }
 .lightbox-watermark span{
   font-family:'JetBrains Mono',monospace;
-  font-size:1rem; letter-spacing:.25em;
-  color:rgba(255,255,255,.22);
+  font-size:1rem; font-weight:700; letter-spacing:.12em;
+  color:rgba(255,255,255,.4);
   white-space:nowrap;
 }
 .lightbox-top{
