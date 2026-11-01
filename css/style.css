@@ -381,6 +381,16 @@ a:focus-visible, button:focus-visible, input:focus-visible{
 .modal-actions .btn{margin-top:0;}
 .success-icon{font-size:2.4rem; margin-bottom:8px;}
 
+/* ---------- Pix ---------- */
+.pix-box{
+  margin:0 0 20px; padding:16px; border:1px dashed var(--brass); border-radius:var(--radius-sm);
+  background:var(--paper); display:flex; flex-direction:column; gap:8px; align-items:stretch;
+}
+.pix-box .pix-title{margin:0; font-weight:600; color:var(--ink); font-size:.95rem;}
+.pix-box .pix-valor{margin:0; font-size:1.4rem; color:var(--wine-deep);}
+.pix-box .btn{width:100%; margin-top:0;}
+.pix-box .pix-hint{margin:2px 0 0; font-size:.78rem; color:var(--ink-soft);}
+
 /* ---------- painel administrativo ---------- */
 .admin-shell{min-height:100vh; display:flex; flex-direction:column;}
 .admin-topbar{

@@ -26,7 +26,10 @@ const STUDIO_CONFIG = {
   studioName: "MPS Photography",            // <-- nome da fotógrafa / estúdio
   studioTagline: "ensaios & retratos",
   logoInitials: "MPS",                      // usado enquanto não há logo em imagem
-  whatsappNumber: "5511914746140"           // número que RECEBE as seleções das clientes — formato: 55 + DDD + número, só dígitos
+  whatsappNumber: "5511914746140",          // número que RECEBE as seleções das clientes — formato: 55 + DDD + número, só dígitos
+  pixKey: "46526478832",                    // chave Pix (CPF, só dígitos) — aparece para a cliente depois de enviar a seleção
+  pixNome: "MPS PHOTOGRAPHY",               // nome do recebedor no Pix (máx. 25 letras, sem acento)
+  pixCidade: "CABREUVA"                     // cidade do recebedor no Pix (máx. 15 letras, sem acento)
 };
 
 /* ---------- CONFIGURAÇÃO DO FIREBASE (edite aqui) ----------

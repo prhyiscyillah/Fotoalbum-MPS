@@ -33,6 +33,77 @@
   els.greetSubtitle.textContent = `${gallery.ensaioNome} — escolha suas fotos favoritas`;
   els.sheetLabel.textContent = `${gallery.ensaioNome.toUpperCase()} · ${photos.length} FOTOS`;
 
+  /* ---------- Prazo da seleção ---------- */
+  if (gallery.expiraEm) {
+    const d = new Date(gallery.expiraEm);
+    if (!isNaN(d)) {
+      const prazo = document.createElement('p');
+      prazo.className = 'price-info mono';
+      const soData = /^\d{4}-\d{2}-\d{2}$/.test(gallery.expiraEm);
+      const dataTxt = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', ...(soData ? { timeZone: 'UTC' } : {}) });
+      const dias = Math.ceil((d - new Date()) / 86400000);
+      prazo.textContent = `⏳ Seleção aberta até ${dataTxt}` + (dias > 0 ? ` (${dias} dia${dias > 1 ? 's' : ''})` : '');
+      els.priceInfo.parentNode.insertBefore(prazo, els.priceInfo);
+    }
+  }
+
+  /* ---------- Pix (copia e cola com o valor do pedido) ---------- */
+  function crc16(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+  function tlv(id, v) { return id + String(v.length).padStart(2, '0') + v; }
+  function semAcento(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+  function gerarPixCopiaECola(valor) {
+    const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', STUDIO_CONFIG.pixKey);
+    let p = tlv('00', '01') + tlv('01', '11') + tlv('26', conta) + tlv('52', '0000') + tlv('53', '986');
+    if (valor > 0) p += tlv('54', valor.toFixed(2));
+    p += tlv('58', 'BR') + tlv('59', semAcento(STUDIO_CONFIG.pixNome || 'MPS').slice(0, 25)) +
+         tlv('60', semAcento(STUDIO_CONFIG.pixCidade || 'BRASIL').slice(0, 15)) + tlv('62', tlv('05', '***'));
+    p += '6304';
+    return p + crc16(p);
+  }
+  function copiarTexto(txt, msg) {
+    const ok = () => showToast(msg);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(ok).catch(() => fallbackCopy(txt, ok));
+    } else fallbackCopy(txt, ok);
+  }
+  function fallbackCopy(txt, cb) {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); cb(); } catch (e) {}
+    ta.remove();
+  }
+  function mostrarPix() {
+    if (!STUDIO_CONFIG.pixKey) return;
+    const total = calcTotal();
+    const box = document.getElementById('pixBox');
+    if (!box) return;
+    const codigo = gerarPixCopiaECola(total || 0);
+    box.innerHTML = `
+      <p class="pix-title">Pagamento via Pix</p>
+      ${total !== null ? `<p class="pix-valor mono">R$ ${fmtMoney(total)}</p>` : ''}
+      <button type="button" class="btn small" id="pixCopiaCola">Copiar Pix copia e cola</button>
+      <button type="button" class="btn small secondary" id="pixCopiaChave">Copiar só a chave Pix</button>
+      <p class="pix-hint">Depois de pagar, envie o comprovante no WhatsApp.</p>`;
+    document.getElementById('pixCopiaCola').addEventListener('click', () => copiarTexto(codigo, 'Pix copia e cola copiado!'));
+    document.getElementById('pixCopiaChave').addEventListener('click', () => copiarTexto(STUDIO_CONFIG.pixKey, 'Chave Pix copiada!'));
+    box.style.display = 'block';
+  }
+  (function criarPixBox() {
+    const acoes = document.querySelector('#successModal .modal-actions');
+    if (!acoes || document.getElementById('pixBox')) return;
+    const box = document.createElement('div');
+    box.id = 'pixBox'; box.className = 'pix-box'; box.style.display = 'none';
+    acoes.parentNode.insertBefore(box, acoes);
+  })();
+
   function isOverLimit() { return selection.size > gallery.limiteFotos; }
   function extraCount() { return Math.max(0, selection.size - gallery.limiteFotos); }
 
@@ -76,6 +147,12 @@
         : `Total do pedido: <strong>R$ ${fmtMoney(total)}</strong>`;
     } else {
       els.priceInfo.style.display = 'none';
+    }
+
+    // Oferta de foto extra quando a cliente chega exatamente no limite do pacote
+    if (!isOverLimit() && selection.size === gallery.limiteFotos && parseValor(gallery.valorFotoExtra)) {
+      els.priceInfo.style.display = 'block';
+      els.priceInfo.innerHTML += ` · Quer mais fotos? Cada extra: <strong>R$ ${fmtMoney(parseValor(gallery.valorFotoExtra))}</strong>`;
     }
 
     els.submitHint.textContent = selection.size === 0
@@ -214,6 +291,7 @@
     const link = `https://wa.me/${STUDIO_CONFIG.whatsappNumber}?text=${encodeURIComponent(mensagem)}`;
     window.open(link, '_blank');
 
+    mostrarPix();
     successModal.classList.add('open');
   });
   document.getElementById('successClose').addEventListener('click', () => successModal.classList.remove('open'));
